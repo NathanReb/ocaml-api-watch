@@ -3,4 +3,4 @@
  (inline_tests)
  (preprocess
   (pps ppx_expect))
- (libraries api_watch_diff))
+ (libraries api_watch_diff test_helpers))
