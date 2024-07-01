@@ -1,7 +1,14 @@
 open Types
 
-type change = Added | Removed | Modified
-type diff = Value of string * change | Any
+type ('item, 'diff) change =
+  | Added of 'item
+  | Removed of 'item
+  | Modified of 'diff
+
+type diff =
+  | Value of
+      string * (value_description, value_description * value_description) change
+  | Any
 
 module FieldMap = Map.Make (struct
   type t = string
@@ -73,6 +80,10 @@ let diff_value ~typing_env ~val_name ~reference ~current =
   | _, _ -> Some ()
   | exception Includecore.Dont_match _ -> Some ()
 
+let resolve env vd =
+  let res_val_type = Ctype.expand_head env vd.val_type in
+  { vd with val_type = res_val_type }
+
 let compare_values ~reference ~current =
   let env = env_setup ~ref_sig:reference ~curr_sig:current in
   let ref_values = extract_values reference in
@@ -80,8 +91,9 @@ let compare_values ~reference ~current =
   let diffs =
     FieldMap.fold
       (fun val_name curr_vd acc ->
+        let resolved_curr_vd = resolve env curr_vd in
         match FieldMap.find_opt val_name ref_values with
-        | None -> Value (val_name, Added) :: acc
+        | None -> Value (val_name, Added resolved_curr_vd) :: acc
         | Some ref_vd -> (
             let value_differs =
               diff_value ~typing_env:env ~val_name ~reference:ref_vd
@@ -89,13 +101,17 @@ let compare_values ~reference ~current =
             in
             match value_differs with
             | None -> acc
-            | Some _ -> Value (val_name, Modified) :: acc))
+            | Some _ ->
+                let resolved_ref_vd = resolve env ref_vd in
+                Value (val_name, Modified (resolved_ref_vd, resolved_curr_vd))
+                :: acc))
       curr_values []
   in
   FieldMap.fold
-    (fun val_name _ref_vd acc ->
+    (fun val_name ref_vd acc ->
+      let resolved_ref_vd = resolve env ref_vd in
       if not (FieldMap.mem val_name curr_values) then
-        Value (val_name, Removed) :: acc
+        Value (val_name, Removed resolved_ref_vd) :: acc
       else acc)
     ref_values diffs
 

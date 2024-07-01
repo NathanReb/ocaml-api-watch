@@ -1,5 +1,15 @@
-type change = Added | Removed | Modified
-type diff = Value of string * change | Any
+type ('item, 'diff) change =
+  | Added of 'item
+  | Removed of 'item
+  | Modified of 'diff
+
+type diff =
+  | Value of
+      string
+      * ( Types.value_description,
+          Types.value_description * Types.value_description )
+        change
+  | Any
 
 val diff_interface :
   reference:Types.signature_item list ->
