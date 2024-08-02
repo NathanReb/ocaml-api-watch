@@ -1,4 +1,4 @@
-open Api_watch_diff
+open Api_watch
 open Test_helpers
 
 let%expect_test "Modules with both value and submodule changes" =

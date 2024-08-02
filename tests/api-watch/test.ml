@@ -1,4 +1,4 @@
-open Api_watch_diff
+open Api_watch
 open Test_helpers
 
 let%expect_test "test_diff_interface" =

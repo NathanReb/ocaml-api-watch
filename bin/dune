@@ -1,4 +1,4 @@
 (executable
  (name api_diff)
  (public_name api-diff)
- (libraries api_watch_diff cmdliner compiler-libs.common))
+ (libraries api-watch cmdliner compiler-libs.common))
