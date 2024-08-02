@@ -1,4 +1,4 @@
-open Api_watch
+open Api_watch.Diff
 
 let rec pp_module_modification fmt = function
   | Unsupported -> Format.fprintf fmt "Unsupported"

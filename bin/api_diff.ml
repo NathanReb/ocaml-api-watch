@@ -2,13 +2,13 @@ let run (`Ref_cmi reference) (`Current_cmi current) =
   let current = Cmi_format.read_cmi current in
   let reference = Cmi_format.read_cmi reference in
   let diff =
-    Api_watch.diff_interface ~module_name:current.cmi_name
+    Api_watch.Diff.interface ~module_name:current.cmi_name
       ~reference:reference.cmi_sign ~current:current.cmi_sign
   in
   match diff with
   | None -> 0
   | Some diff ->
-      let text_diff = Api_watch.to_text_diff diff in
+      let text_diff = Api_watch.Text_diff.from_diff diff in
       let print_module_diff module_path diff =
         Printf.printf "diff module %s:\n" module_path;
         Diffutils.Diff.pp Diffutils.Diff.git_printer Format.std_formatter diff;

@@ -22,7 +22,7 @@ let%expect_test "Modules with both value and submodule changes" =
     end
   |}
   in
-  let result = diff_interface ~module_name:"Main" ~reference ~current in
+  let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
   [%expect
     {|
@@ -57,7 +57,7 @@ let%expect_test "Modules with multiple value and submodule changes" =
     module N : sig val x: int end
   |}
   in
-  let result = diff_interface ~module_name:"Main" ~reference ~current in
+  let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
   [%expect
     {|
@@ -80,7 +80,7 @@ let%expect_test "Modules with both supported and unsupported changes" =
   type t
   end
   |} in
-  let result = diff_interface ~module_name:"Main" ~reference ~current in
+  let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
   [%expect
     {|
@@ -112,7 +112,7 @@ let%expect_test "Submodules with different functor types" =
     end
   |}
   in
-  let result = diff_interface ~module_name:"Main" ~reference ~current in
+  let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
   [%expect
     {|
@@ -138,7 +138,7 @@ let%expect_test "Submodule with module type modified from signature to functor"
     end
   |}
   in
-  let result = diff_interface ~module_name:"Main" ~reference ~current in
+  let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
   [%expect
     {|
