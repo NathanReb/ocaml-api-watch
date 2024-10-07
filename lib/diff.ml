@@ -1,5 +1,8 @@
 open Types
-
+open Location
+(*in progress define the following funs
+class_type_item
+a seperate class signature*)
 type ('item, 'diff) t = Added of 'item | Removed of 'item | Modified of 'diff
 
 type 'a atomic_modification = { reference : 'a; current : 'a }
@@ -11,22 +14,27 @@ type value = {
   vname : string;
   vdiff : (value_description, value_description atomic_modification) t;
 }
-
+type class_ = {
+  cname : string;
+  cdiff : (class_declaration, class_declaration atomic_modification) t;
+}
+type class_declaration = {
+  cd_name : string;
+  cls_decl_type : class_type;
+  cls_decl_loc : Location.t;
+}
 type module_ = {
   mname : string;
   mdiff : (module_declaration, module_modification) t;
 }
-
 and module_modification = Unsupported | Supported of sig_item list
-and sig_item = Value of value | Module of module_
+and sig_item = Value of value | Module of module_ | Class of class_
 
-type item_type = Value_item | Module_item [@@deriving ord]
-type sig_items = Val of value_description | Mod of module_declaration
-
+type item_type = Value_item | Module_item|Class_item [@@deriving ord]
+type sig_items = Val of value_description | Mod of module_declaration | Cls of class_declaration
 module Sig_item_map = Map.Make (struct
   type t = item_type * string [@@deriving ord]
 end)
-
 let extract_items items =
   List.fold_left
     (fun tbl item ->
@@ -35,9 +43,16 @@ let extract_items items =
           Sig_item_map.add (Module_item, Ident.name id) (Mod mod_decl) tbl
       | Sig_value (id, val_des, _) ->
           Sig_item_map.add (Value_item, Ident.name id) (Val val_des) tbl
+      | Sig_class(id,cls_decl,_,_) ->
+        let cls_decl: class_declaration = {
+          cd_name = Ident.name id;
+          cls_decl_type = cls_decl;
+          cls_decl_loc = Location.none;
+        } in 
+         Sig_item_map.add (Class_item, Ident.name id) (Cls cls_decl) tbl
       | _ -> tbl)
     Sig_item_map.empty items
-
+ 
 let modtype_item ~loc ~typing_env ~name ~reference ~current =
   let modtype_coercion1 () =
     Includemod.modtypes ~loc typing_env ~mark:Mark_both reference current
@@ -76,6 +91,7 @@ let value_item ~typing_env ~name ~reference ~current =
       )
   | _ -> None
 
+
 let rec items ~reference ~current =
   let env = Typing_env.for_diff ~reference ~current in
   let ref_items = extract_items reference in
@@ -86,7 +102,10 @@ let rec items ~reference ~current =
       | Value_item, reference, current ->
           value_item ~typing_env:env ~name ~reference ~current
       | Module_item, reference, current ->
-          module_item ~typing_env:env ~name ~reference ~current)
+          module_item ~typing_env:env ~name ~reference ~current
+      | Class_item, reference, current ->
+          class_item ~typing_env:env ~name ~reference ~current
+      | _ -> None)
     ref_items curr_items
   |> Sig_item_map.bindings |> List.map snd
 
@@ -100,7 +119,16 @@ and module_item ~typing_env ~name ~reference ~current =
   | Some (Mod reference), Some (Mod current) ->
       module_declaration ~typing_env ~name ~reference ~current
   | _ -> assert false
-
+  and class_item ~typing_env ~name ~reference ~current =
+    match (reference, current) with
+    | None, None -> None
+    | None, Some (Cls curr_cd) -> 
+        Some (Class { cname = name; cdiff = Added curr_cd})
+    | Some(Cls ref_cd), None -> 
+        Some (Class { cname = name; cdiff = Removed ref_cd})
+    | Some (Cls reference), Some (Cls current) -> 
+        class_declaration ~typing_env ~name ~reference ~current
+    | _ -> assert false
 and module_declaration ~typing_env ~name ~reference ~current =
   match (reference.md_type, current.md_type) with
   | Mty_signature ref_submod, Mty_signature curr_submod ->
@@ -109,6 +137,14 @@ and module_declaration ~typing_env ~name ~reference ~current =
   | ref_modtype, curr_modtype ->
       modtype_item ~loc:reference.md_loc ~typing_env ~name
         ~reference:ref_modtype ~current:curr_modtype
+  and class_declaration ~typing_env ~name ~reference ~current = 
+    match (reference.cls_decl_type, current.cls_decl_type) with
+    | Cty_signature ref_sig,Cty_signature curr_sig -> 
+      signatures ~typing_env ~reference:ref_sig ~current:curr_sig
+    |> Option.map (fun cdiff -> Class { cname = name; cdiff})
+    | ref_class_type, curr_class_type -> 
+      class_type_item ~loc:reference.cls_decl_loc ~typing_env ~name
+       ~reference:ref_class_type ~current:curr_class_type 
 
 and signatures ~typing_env ~reference ~current =
   match items ~reference ~current with
@@ -124,7 +160,19 @@ and signatures ~typing_env ~reference ~current =
       | _, _ -> Some (Modified Unsupported)
       | exception Includemod.Error _ -> Some (Modified Unsupported))
   | item_changes -> Some (Modified (Supported item_changes))
-
+(*and class_signatures ~typing_env ~reference ~current = 
+  match items ~reference ~current with 
+  |[] -> (
+    let coercion1 () = 
+      Includecore.class_signatures typing_env ~mark:Mark_both reference current in
+    let coercion2 () = 
+      Includecore.class_signatures typing_env ~mark:Mark_both current reference in
+      match (coercion1 () coercion2 ()) with
+      | Tcoerce_none, Tcoerce_none -> None
+      |_, _ -> Some (Modified Unsupported)
+      |exception Includecore.Error _ -> Some (Modified Unsupported)
+  | item_changes -> Some (Modified (Supported item_changes))
+  )*)
 let interface ~module_name ~reference ~current =
   let typing_env = Env.empty in
   signatures ~typing_env ~reference ~current
