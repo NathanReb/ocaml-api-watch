@@ -54,7 +54,7 @@ let extract_items items =
       | Sig_class (id, cls_decl, _, _) ->
         let cls_decl: class_declaration = {
           cd_name = Ident.name id;
-          cls_decl_type = cls_decl;
+          cls_decl_type = cls_decl.cty_type;
           cls_decl_loc = Location.none;
         } in 
         Sig_item_map.add (Class_item, Ident.name id) (Cls cls_decl) tbl
