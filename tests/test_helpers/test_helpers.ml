@@ -12,6 +12,7 @@ let rec pp_module_modification fmt = function
 and pp_item_diff fmt = function
   | Value value_diff -> pp_value_diff fmt value_diff
   | Module module_diff -> pp_module_diff fmt module_diff
+  | Modtype module_type_diff -> pp_module_type_diff fmt module_type_diff
 
 and pp_value_diff fmt { vname; vdiff } =
   match vdiff with
@@ -26,6 +27,14 @@ and pp_module_diff fmt { mname; mdiff } =
   | Modified mdiff ->
       Format.fprintf fmt "Module %s: {Modified (%a)}" mname
         pp_module_modification mdiff
+
+and pp_module_type_diff fmt { mtname; mtdiff } =
+  match mtdiff with
+  | Added _ -> Format.fprintf fmt "Module_type %s: Added" mtname
+  | Removed _ -> Format.fprintf fmt "Module_type %s: Removed" mtname
+  | Modified mtdiff ->
+      Format.fprintf fmt "Module_type %s: {Modified (%a)}" mtname
+        pp_module_modification mtdiff
 
 let pp_diff_option fmt = function
   | None -> Format.fprintf fmt "None"
