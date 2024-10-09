@@ -90,7 +90,9 @@ let rec items ~reference ~current =
       | Value_item, reference, current ->
           value_item ~typing_env:env ~name ~reference ~current
       | Module_item, reference, current ->
-          module_item ~typing_env:env ~name ~reference ~current)
+          module_item ~typing_env:env ~name ~reference ~current
+      Class_item, reference, current -> 
+        class_item ~typing_env:env ~name ~reference ~current)
     ref_items curr_items
   |> Sig_item_map.bindings |> List.map snd
 
