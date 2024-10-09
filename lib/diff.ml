@@ -30,7 +30,7 @@ type item_type = Value_item | Module_item | Modtype_item [@@deriving ord]
 type sig_items =
   | Val of value_description
   | Mod of module_declaration
-  | Mtdtype of modtype_declaration
+  | ModType of modtype_declaration
 
 module Sig_item_map = Map.Make (struct
   type t = item_type * string [@@deriving ord]
@@ -43,7 +43,7 @@ let extract_items items =
       | Sig_module (id, _, mod_decl, _, _) ->
           Sig_item_map.add (Module_item, Ident.name id) (Mod mod_decl) tbl
       | Sig_modtype (id, mtd_decl, _) ->
-          Sig_item_map.add (Modtype_item, Ident.name id) (Mtdtype mtd_decl) tbl
+          Sig_item_map.add (Modtype_item, Ident.name id) (ModType mtd_decl) tbl
       | Sig_value (id, val_des, _) ->
           Sig_item_map.add (Value_item, Ident.name id) (Val val_des) tbl
       | _ -> tbl)
@@ -117,11 +117,11 @@ and module_item ~typing_env ~name ~reference ~current =
 and mtdtype_item ~typing_env ~name ~reference ~current =
   match (reference, current) with
   | None, None -> None
-  | None, Some (Mtdtype curr_mtd) ->
+  | None, Some (ModType curr_mtd) ->
       Some (Modtype { mtname = name; mtdiff = Added curr_mtd })
-  | Some (Mtdtype ref_mtd), None ->
+  | Some (ModType ref_mtd), None ->
       Some (Modtype { mtname = name; mtdiff = Removed ref_mtd })
-  | Some (Mtdtype ref_mtd), Some (Mtdtype curr_mtd) ->
+  | Some (ModType ref_mtd), Some (ModType curr_mtd) ->
       module_type_declaration ~typing_env ~name ~reference:ref_mtd
         ~current:curr_mtd
   | _ -> assert false
