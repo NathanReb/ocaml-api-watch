@@ -3,4 +3,4 @@
  (public_name api-watch)
  (preprocess
   (pps ppx_deriving.std))
- (libraries compiler-libs.common diffutils unix containers fmt))
+ (libraries compiler-libs.common unix containers fmt))

@@ -1,7 +1,8 @@
-(** Conversion from library diff abstraction to textual diff, line based
-    diff *)
+(** Utilities for custom diff printing  *)
 
-type t = Diffutils.Diff.t String_map.t
+type conflict2 = { orig : string list; new_ : string list }
+
+type t = conflict2 list String_map.t
 (** Type for representing library interface diffs as text diff.
 
     Changes are arranged per fully qualified module path.
@@ -15,15 +16,13 @@ type t = Diffutils.Diff.t String_map.t
     a new function [Main.M.do_something], this will show in the textual
     diff under the key ["Main.M"].
     Identical modules won't appear in the map.
-
-    Note that the individual [Diffutils.Diff.t] stored in the map only
-    contain line changes, i.e. only [Diff {orig; new_}] hunks, no [Same s]
-    ones. *)
-
-val from_diff : Diff.module_ -> Diffutils.Diff.t String_map.t
+ *)
 
 val pp : Format.formatter -> t -> unit
 (** Pretty-print the text diff in a human readable, git diff like format. *)
+
+val from_diff : Diff.module_ -> t
+(** Converts from a low-level diff to a textual diff *)
 
 module With_colors : sig
   val pp : Format.formatter -> t -> unit
