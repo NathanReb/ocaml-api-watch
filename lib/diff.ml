@@ -39,6 +39,8 @@ let extract_items items =
           Sig_item_map.add (Module_item, Ident.name id) (Mod mod_decl) tbl
       | Sig_value (id, val_des, _) ->
           Sig_item_map.add (Value_item, Ident.name id) (Val val_des) tbl
+      | Sig_class (id, cls_decl, _, _) -> (*map class item in extract items*)
+        Sig_class_map.add(Class_item, Ident.name id) (Cls cls_decl) tbl
       | _ -> tbl)
     Sig_item_map.empty items
 
@@ -91,12 +93,13 @@ let rec items ~reference ~current =
           value_item ~typing_env:env ~name ~reference ~current
       | Module_item, reference, current ->
           module_item ~typing_env:env ~name ~reference ~current
-      Class_item, reference, current -> 
+      Class_item, reference, current -> (*include class detection in items function*)
         class_item ~typing_env:env ~name ~reference ~current)
     ref_items curr_items
   |> Sig_item_map.bindings |> List.map snd
 
-and class_item ~typing_env, ~name, ~reference ~current = (*class item detection function*)
+(*class item detection function*)
+and class_item ~typing_env, ~name, ~reference ~current = 
    match (reference, current) with
    | None, None -> None
    | None, Some (Cls, curr_cd) -> 
@@ -109,8 +112,7 @@ and class_item ~typing_env, ~name, ~reference ~current = (*class item detection 
        reference current in 
        let class_coercion2 () = 
         Includecore.class_declaration ~loc: current.cls_loc typing_env name
-        current reference 
-      in 
+        current reference in 
       match (class_coercion1, class_coercion2)
       | Tcoerce_none, Tcoerce_none -> None
       | _ -> 
