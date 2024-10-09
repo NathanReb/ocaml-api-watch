@@ -116,7 +116,10 @@ let%expect_test "Submodules with different functor types" =
   Format.printf "%a" pp_diff_option result;
   [%expect
     {|
-    Some (Module Main: {Modified (Supported [ Module F: {Modified (Unsupported)}])})|}]
+    Some (Module Main: {Modified (Supported [ Module F: {Modified (Unsupported)};
+    Module_type X: Removed;
+    Module_type Y: Added])})
+    |}]
 
 let%expect_test "Submodule with module type modified from signature to functor"
     =

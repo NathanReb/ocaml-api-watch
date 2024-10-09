@@ -1,4 +1,4 @@
-# Tests for module modifications 
+# Tests for module modifications
 
 Here we generate a `.mli` file with a module:
 
