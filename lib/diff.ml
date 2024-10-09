@@ -99,7 +99,7 @@ let rec items ~reference ~current =
       | Module_item, reference, current ->
           module_item ~typing_env:env ~name ~reference ~current
       | Modtype_item, reference, current ->
-          mtdtype_item ~typing_env:env ~name ~reference ~current)
+          module_type_item ~typing_env:env ~name ~reference ~current)
     ref_items curr_items
   |> Sig_item_map.bindings |> List.map snd
 
@@ -114,7 +114,7 @@ and module_item ~typing_env ~name ~reference ~current =
       module_declaration ~typing_env ~name ~reference ~current
   | _ -> assert false
 
-and mtdtype_item ~typing_env ~name ~reference ~current =
+and module_type_item ~typing_env ~name ~reference ~current =
   match (reference, current) with
   | None, None -> None
   | None, Some (ModType curr_mtd) ->
@@ -127,23 +127,25 @@ and mtdtype_item ~typing_env ~name ~reference ~current =
   | _ -> assert false
 
 and module_declaration ~typing_env ~name ~reference ~current =
-  match (reference.md_type, current.md_type) with
+  module_helper ~typing_env ~name ~ref_module_type:reference.md_type
+    ~current_module_type:current.md_type ~reference_location:reference.md_loc
+
+and module_type_declaration ~typing_env ~name ~reference ~current =
+  match (reference.mtd_type, current.mtd_type) with
+  | Some ref_sub, Some curr_sub ->
+      module_helper ~typing_env ~name ~ref_module_type:ref_sub
+        ~current_module_type:curr_sub ~reference_location:reference.mtd_loc
+  | _ -> assert false
+
+and module_helper ~typing_env ~name ~ref_module_type ~current_module_type
+    ~reference_location =
+  match (ref_module_type, current_module_type) with
   | Mty_signature ref_submod, Mty_signature curr_submod ->
       signatures ~typing_env ~reference:ref_submod ~current:curr_submod
       |> Option.map (fun mdiff -> Module { mname = name; mdiff })
   | ref_modtype, curr_modtype ->
-      modtype_item ~loc:reference.md_loc ~typing_env ~name
+      modtype_item ~loc:reference_location ~typing_env ~name
         ~reference:ref_modtype ~current:curr_modtype
-
-and module_type_declaration ~typing_env ~name ~reference ~current =
-  match (reference.mtd_type, current.mtd_type) with
-  | Some (Mty_signature ref_sub), Some (Mty_signature curr_sub) ->
-      signatures ~typing_env ~reference:ref_sub ~current:curr_sub
-      |> Option.map (fun mdiff -> Module { mname = name; mdiff })
-  | Some ref_sub, Some curr_sub ->
-      modtype_item ~loc:reference.mtd_loc ~typing_env ~name ~reference:ref_sub
-        ~current:curr_sub
-  | _ -> assert false
 
 and signatures ~typing_env ~reference ~current =
   match items ~reference ~current with
