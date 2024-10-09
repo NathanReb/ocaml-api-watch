@@ -21,6 +21,7 @@ type class = {
   cname : string;
   cdiff : (class_declaration, class_modification)
 }
+and class_modification = Unsupported | Suported of sig_item list
 and sig_item = Value of value | Module of module_
 
 type item_type = Value_item | Module_item [@@deriving ord]
