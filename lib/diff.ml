@@ -6,22 +6,25 @@ type 'a atomic_modification = { reference : 'a; current : 'a }
 (** The simplest diff representation for the modification of a value of type 'a.
      [reference] is the value before and [current] is the value after the change occured.
      Use this type when there is no better representation available. *)
-
+     
 type value = {
   vname : string;
   vdiff : (value_description, value_description atomic_modification) t;
 }
-
+type class_declaration = {
+  cname : string;
+  cdiff : (class_description, class_modification) t;
+}
+and class_modification = Unsupported | Supported of sig_item list
 type module_ = {
   mname : string;
   mdiff : (module_declaration, module_modification) t;
-}
-
+} 
 and module_modification = Unsupported | Supported of sig_item list
-and sig_item = Value of value | Module of module_
+and sig_item = Value of value | Module of module_ | Class of class_declaration
 
-type item_type = Value_item | Module_item [@@deriving ord]
-type sig_items = Val of value_description | Mod of module_declaration
+type item_type = Value_item | Module_item | Class_item[@@deriving ord]
+type sig_items = Val of value_description | Mod of module_declaration | Cls of class_description
 
 module Sig_item_map = Map.Make (struct
   type t = item_type * string [@@deriving ord]
@@ -35,6 +38,8 @@ let extract_items items =
           Sig_item_map.add (Module_item, Ident.name id) (Mod mod_decl) tbl
       | Sig_value (id, val_des, _) ->
           Sig_item_map.add (Value_item, Ident.name id) (Val val_des) tbl
+      | Sig_class (id, cls_des, _, _) -> (*map class item in extract items*)
+        Sig_item_map.add(Class_item, Ident.name id) (Cls cls_des) tbl
       | _ -> tbl)
     Sig_item_map.empty items
 
@@ -86,10 +91,22 @@ let rec items ~reference ~current =
       | Value_item, reference, current ->
           value_item ~typing_env:env ~name ~reference ~current
       | Module_item, reference, current ->
-          module_item ~typing_env:env ~name ~reference ~current)
+          module_item ~typing_env:env ~name ~reference ~current
+      | Class_item, reference, current -> (*include class detection in items function*)
+          class_item ~typing_env:env ~name ~reference ~current)
     ref_items curr_items
   |> Sig_item_map.bindings |> List.map snd
 
+(*class item detection function*)
+and class_item ~typing_env ~name ~reference ~current = 
+  match (reference, current) with
+  | None, None -> None
+  | None, Some (Cls, curr_class) -> 
+    Some (Class {cname = name; cdiff = Added curr_class})
+  | Some (Cls, reference), None -> 
+      Some (Class {cname = name; cdiff = Removed ref_class})
+  | Some (Cls, curr_class), Some (Cls, ref_class) -> ()
+  | _ -> None
 and module_item ~typing_env ~name ~reference ~current =
   match (reference, current) with
   | None, None -> None
