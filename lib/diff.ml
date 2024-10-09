@@ -17,15 +17,15 @@ type module_ = {
 }
 
 and module_modification = Unsupported | Supported of sig_item list
-type class = {
+type class_ = {
   cname : string;
   cdiff : (class_declaration, class_modification)
 }
 and class_modification = Unsupported | Suported of sig_item list
-and sig_item = Value of value | Module of module_
+and sig_item = Value of value | Module of module_ | Class of class_
 
 type item_type = Value_item | Module_item [@@deriving ord]
-type sig_items = Val of value_description | Mod of module_declaration
+type sig_items = Val of value_description | Mod of module_declaration 
 
 module Sig_item_map = Map.Make (struct
   type t = item_type * string [@@deriving ord]
