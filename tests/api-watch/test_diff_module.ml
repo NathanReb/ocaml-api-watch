@@ -34,7 +34,7 @@ let%expect_test "Modules with multiple value and submodule changes" =
     compile_interface
       {|
     type ('a, 'b) result = Ok of 'a | Error of 'b
-    val a : string -> int 
+    val a : string -> int
     val f : int -> string
     module M : sig
       val b : int list -> int
@@ -68,13 +68,11 @@ let%expect_test "Modules with multiple value and submodule changes" =
     Module N: Added])})|}]
 
 let%expect_test "Modules with both supported and unsupported changes" =
-  let reference =
-    compile_interface {|
+  let reference = compile_interface {|
   val x: int
-  module M: sig 
-  
-  end|}
-  in
+  module M: sig
+
+  end|} in
   let current = compile_interface {|
   module M: sig
   type t
