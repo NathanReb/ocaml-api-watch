@@ -24,8 +24,8 @@ type class_ = {
 and class_modification = Unsupported | Suported of sig_item list
 and sig_item = Value of value | Module of module_ | Class of class_
 
-type item_type = Value_item | Module_item [@@deriving ord]
-type sig_items = Val of value_description | Mod of module_declaration 
+type item_type = Value_item | Module_item | Class_item[@@deriving ord]
+type sig_items = Val of value_description | Mod of module_declaration | Cls of class_declaration
 
 module Sig_item_map = Map.Make (struct
   type t = item_type * string [@@deriving ord]
@@ -93,6 +93,29 @@ let rec items ~reference ~current =
           module_item ~typing_env:env ~name ~reference ~current)
     ref_items curr_items
   |> Sig_item_map.bindings |> List.map snd
+
+and class_item ~typing_env, ~name, ~reference ~current = (*class item detection function*)
+   match (reference, current) with
+   | None, None -> None
+   | None, Some (Cls, curr_cd) -> 
+      Some (Class {cname = name; cdiff = Removed curr_cd})
+    | Some (Cls, ref_cd), None -> 
+        Some (Class {cname = name; cdiff = Added ref_cd})
+    | Some (Cls, ref_cd), Some (Cls, curr_cd) -> (
+       let class_coercion1 () = 
+       Includecore.class_declaration ~loc:reference.cls_loc typing_env name
+       reference current in 
+       let class_coercion2 () = 
+        Includecore.class_declaration ~loc: current.cls_loc typing_env name
+        current reference 
+      in 
+      match (class_coercion1, class_coercion2)
+      | Tcoerce_none, Tcoerce_none -> None
+      | _ -> 
+        Some (Class {cname = name, cdiff = Modified{reference; current}})
+      | exception Includecore.Dont_match _ ->
+        Some (Class {cname = name; cdiff = Modified {reference; current} })
+    )
 
 and module_item ~typing_env ~name ~reference ~current =
   match (reference, current) with
