@@ -75,11 +75,13 @@ let%expect_test "Modules with both supported and unsupported changes" =
   
   end|}
   in
-  let current = compile_interface {|
+  let current =
+    compile_interface {|
   module M: sig
-  type t
+  type exn += Some_exn
   end
-  |} in
+  |}
+  in
   let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
   [%expect
