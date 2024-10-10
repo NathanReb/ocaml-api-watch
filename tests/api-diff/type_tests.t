@@ -29,7 +29,7 @@ Run api-watcher on the two cmi files, there should be a difference
 
   $ api-diff ref.cmi add_type.cmi
   diff module Add_type:
-  +<unsupported change>
+  +type added_t = float
   
   [1]
 
@@ -48,7 +48,7 @@ Run api-watcher on the two cmi files, there should be a difference
 
   $ api-diff ref.cmi remove_type.cmi
   diff module Remove_type:
-  +<unsupported change>
+  -type unused_type = string
   
   [1]
 
@@ -68,6 +68,7 @@ Run api-watcher on the two cmi files, there should be a difference
 
   $ api-diff ref.cmi modify_type.cmi
   diff module Modify_type:
-  +<unsupported change>
+  -type t = int
+  +type t = float
   
   [1]

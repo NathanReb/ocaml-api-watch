@@ -100,7 +100,8 @@ let%expect_test "Adding a type" =
       ~current:add_type_signature
   in
   Format.printf "%a" pp_diff_option result;
-  [%expect {|Some (Module Main: {Modified (Unsupported)})|}]
+  [%expect
+    {|Some (Module Main: {Modified (Supported [ Type (added_t, Added)])})|}]
 
 let remove_type_signature =
   compile_interface {|
@@ -114,14 +115,16 @@ let%expect_test "Removing a type" =
       ~current:remove_type_signature
   in
   Format.printf "%a" pp_diff_option result;
-  [%expect {|Some (Module Main: {Modified (Unsupported)})|}]
+  [%expect
+    {|Some (Module Main: {Modified (Supported [ Type (unused_type, Removed)])})|}]
 
 let%expect_test "Modifying a simple type" =
   let reference = compile_interface {|type t = int|} in
   let current = compile_interface {|type t = string|} in
   let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
-  [%expect {|Some (Module Main: {Modified (Unsupported)})|}]
+  [%expect
+    {| Some (Module Main: {Modified (Supported [ Type (t, Modified)])}) |}]
 
 let%expect_test "Modifying a type used in a value" =
   let reference =
@@ -139,7 +142,10 @@ let%expect_test "Modifying a type used in a value" =
   let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
   [%expect
-    {|Some (Module Main: {Modified (Supported [ Value (f, Modified)])})|}]
+    {| 
+    Some (Module Main: {Modified (Supported [ Value (f, Modified); 
+    Type (t, Modified)])})
+    |}]
 
 let ref_module_signature =
   compile_interface {|
@@ -257,7 +263,8 @@ let%expect_test "Adding a record field" =
   in
   let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
-  [%expect {|Some (Module Main: {Modified (Unsupported)})|}]
+  [%expect
+    {| Some (Module Main: {Modified (Supported [ Type (t, Modified)])}) |}]
 
 let%expect_test "Removing a record field" =
   let reference =
@@ -272,7 +279,8 @@ let%expect_test "Removing a record field" =
   |} in
   let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
-  [%expect {|Some (Module Main: {Modified (Unsupported)})|}]
+  [%expect
+    {| Some (Module Main: {Modified (Supported [ Type (t, Modified)])}) |}]
 
 let%expect_test "Modifying a record field" =
   let reference =
@@ -289,7 +297,8 @@ let%expect_test "Modifying a record field" =
   in
   let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
-  [%expect {|Some (Module Main: {Modified (Unsupported)})|}]
+  [%expect
+    {| Some (Module Main: {Modified (Supported [ Type (t, Modified)])}) |}]
 
 let%expect_test "Same variant type" =
   let reference =
@@ -323,7 +332,8 @@ let%expect_test "Adding a variant" =
   in
   let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
-  [%expect {|Some (Module Main: {Modified (Unsupported)})|}]
+  [%expect
+    {| Some (Module Main: {Modified (Supported [ Type (t, Modified)])}) |}]
 
 let%expect_test "Removing a variant" =
   let reference =
@@ -338,7 +348,8 @@ let%expect_test "Removing a variant" =
   |} in
   let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
-  [%expect {|Some (Module Main: {Modified (Unsupported)})|}]
+  [%expect
+    {| Some (Module Main: {Modified (Supported [ Type (t, Modified)])}) |}]
 
 let%expect_test "Modifying a variant type" =
   let reference =
@@ -355,7 +366,8 @@ let%expect_test "Modifying a variant type" =
   in
   let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
-  [%expect {|Some (Module Main: {Modified (Unsupported)})|}]
+  [%expect
+    {| Some (Module Main: {Modified (Supported [ Type (t, Modified)])}) |}]
 
 let%expect_test "Inlined polymorphic variant, identical" =
   let reference = compile_interface {|val x : [ `A | `B ]|} in
@@ -421,7 +433,10 @@ let%expect_test "Named polymorphic variant, modified" =
   let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
   [%expect
-    {|Some (Module Main: {Modified (Supported [ Value (x, Modified)])})|}]
+    {|
+    Some (Module Main: {Modified (Supported [ Value (x, Modified);
+    Type (t, Modified)])})
+    |}]
 
 let%expect_test "Named polymorphic variant, extended" =
   let reference =
@@ -439,7 +454,10 @@ let%expect_test "Named polymorphic variant, extended" =
   let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
   [%expect
-    {|Some (Module Main: {Modified (Supported [ Value (x, Modified)])})|}]
+    {|
+    Some (Module Main: {Modified (Supported [ Value (x, Modified); 
+    Type (t, Modified)])})
+    |}]
 
 let%expect_test "Named polymorphic variant, reduced" =
   let reference =
@@ -455,7 +473,10 @@ let%expect_test "Named polymorphic variant, reduced" =
   let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
   [%expect
-    {|Some (Module Main: {Modified (Supported [ Value (x, Modified)])})|}]
+    {|
+    Some (Module Main: {Modified (Supported [ Value (x, Modified);
+    Type (t, Modified)])})
+    |}]
 
 let%expect_test "Open polymorphic variant, identical" =
   let reference = compile_interface {|val x : [> `A | `B ]|} in
@@ -647,7 +668,8 @@ let%expect_test "Changing from abstract to record type" =
   in
   let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
-  [%expect {|Some (Module Main: {Modified (Unsupported)})|}]
+  [%expect
+    {| Some (Module Main: {Modified (Supported [ Type (t, Modified)])}) |}]
 
 let%expect_test "Changing from record to variant type" =
   let reference =
@@ -664,7 +686,8 @@ let%expect_test "Changing from record to variant type" =
   in
   let result = Diff.interface ~module_name:"Main" ~reference ~current in
   Format.printf "%a" pp_diff_option result;
-  [%expect {|Some (Module Main: {Modified (Unsupported)})|}]
+  [%expect
+    {| Some (Module Main: {Modified (Supported [ Type (t, Modified)])}) |}]
 
 let%expect_test "Values referencing types with parameters, identical" =
   let reference =

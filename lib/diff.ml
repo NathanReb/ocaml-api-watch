@@ -12,16 +12,25 @@ type value = {
   vdiff : (value_description, value_description atomic_modification) t;
 }
 
+type type_ = {
+  tname : string;
+  tdiff : (type_declaration, type_declaration atomic_modification) t;
+}
+
 type module_ = {
   mname : string;
   mdiff : (module_declaration, module_modification) t;
 }
 
 and module_modification = Unsupported | Supported of sig_item list
-and sig_item = Value of value | Module of module_
+and sig_item = Value of value | Module of module_ | Type of type_
 
-type item_type = Value_item | Module_item [@@deriving ord]
-type sig_items = Val of value_description | Mod of module_declaration
+type item_type = Value_item | Module_item | Type_item [@@deriving ord]
+
+type sig_items =
+  | Val of value_description
+  | Mod of module_declaration
+  | Typ of type_declaration * Ident.t
 
 module Sig_item_map = Map.Make (struct
   type t = item_type * string [@@deriving ord]
@@ -35,6 +44,8 @@ let extract_items items =
           Sig_item_map.add (Module_item, Ident.name id) (Mod mod_decl) tbl
       | Sig_value (id, val_des, _) ->
           Sig_item_map.add (Value_item, Ident.name id) (Val val_des) tbl
+      | Sig_type (id, type_decl, _, _) ->
+          Sig_item_map.add (Type_item, Ident.name id) (Typ (type_decl, id)) tbl
       | _ -> tbl)
     Sig_item_map.empty items
 
@@ -50,6 +61,28 @@ let modtype_item ~loc ~typing_env ~name ~reference ~current =
   | _, _ -> Some (Module { mname = name; mdiff = Modified Unsupported })
   | exception Includemod.Error _ ->
       Some (Module { mname = name; mdiff = Modified Unsupported })
+
+let type_item ~typing_env ~name ~reference ~current =
+  match (reference, current) with
+  | None, None -> None
+  | Some (Typ (reference, _)), None ->
+      Some (Type { tname = name; tdiff = Removed reference })
+  | None, Some (Typ (current, _)) ->
+      Some (Type { tname = name; tdiff = Added current })
+  | Some (Typ (reference, refId)), Some (Typ (current, curId)) -> (
+      let type_coercion1 () =
+        Includecore.type_declarations ~equality:true ~loc:current.type_loc
+          typing_env ~mark:true name current (Pident curId) reference
+      in
+      let type_coercion2 () =
+        Includecore.type_declarations ~equality:true ~loc:reference.type_loc
+          typing_env ~mark:true name reference (Pident refId) current
+      in
+      match (type_coercion1 (), type_coercion2 ()) with
+      | None, None -> None
+      | _, _ ->
+          Some (Type { tname = name; tdiff = Modified { reference; current } }))
+  | _ -> None
 
 let value_item ~typing_env ~name ~reference ~current =
   match (reference, current) with
@@ -86,7 +119,9 @@ let rec items ~reference ~current =
       | Value_item, reference, current ->
           value_item ~typing_env:env ~name ~reference ~current
       | Module_item, reference, current ->
-          module_item ~typing_env:env ~name ~reference ~current)
+          module_item ~typing_env:env ~name ~reference ~current
+      | Type_item, reference, current ->
+          type_item ~typing_env:env ~name ~reference ~current)
     ref_items curr_items
   |> Sig_item_map.bindings |> List.map snd
 

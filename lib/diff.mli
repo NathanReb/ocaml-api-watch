@@ -7,13 +7,18 @@ type value = {
     (Types.value_description, Types.value_description atomic_modification) t;
 }
 
+type type_ = {
+  tname : string;
+  tdiff : (Types.type_declaration, Types.type_declaration atomic_modification) t;
+}
+
 type module_ = {
   mname : string;
   mdiff : (Types.module_declaration, module_modification) t;
 }
 
 and module_modification = Unsupported | Supported of sig_item list
-and sig_item = Value of value | Module of module_
+and sig_item = Value of value | Module of module_ | Type of type_
 
 val interface :
   module_name:string ->
